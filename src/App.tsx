@@ -1,24 +1,67 @@
-import React from 'react';
-import { ActivityTableSkeleton } from './components/ActivityTableSkeleton';
-import { ParticipantTableSkeleton } from './components/ParticipantTableSkeleton';
+import React, { useState } from 'react';
+import { ActivityTable } from './components/ActivityTable';
+import { Header } from './components/Header';
+import { ParticipantEditor } from './components/ParticipantEditor';
+import { ResultsDisplay } from './components/ResultsDisplay';
+import { ValidationBanner } from './components/ValidationBanner';
+import { Participant } from './models/types';
+import {
+    createInitialBoardState,
+    evaluateBoardState,
+    resetBoardState,
+} from './logic/state';
 
 export const App: React.FC = () => {
+    const [boardState, setBoardState] = useState(createInitialBoardState);
+
+    const handleUpdateParticipants = (updatedParticipants: Participant[]) => {
+        setBoardState((prev) => ({
+            ...prev,
+            participants: updatedParticipants,
+            // Clear previous calculated outputs when input data changes
+            results: [],
+            eligibleCount: null,
+            ineligibleCount: null,
+            validationErrors: [],
+            isEvaluated: false,
+        }));
+    };
+
+    const handleEvaluate = () => {
+        setBoardState((prev) => evaluateBoardState(prev));
+    };
+
+    const handleReset = () => {
+        setBoardState(resetBoardState());
+    };
+
     return (
         <div className="app-container">
-            <h1>College Event Certificate Eligibility Board</h1>
-            <p className="subtitle">
-                Phase 1: Domain Setup & Skeleton Initialization
-            </p>
+            <Header />
 
-            <ActivityTableSkeleton />
-            <ParticipantTableSkeleton />
+            <main className="main-content flex-column gap-4">
+                <ActivityTable />
 
-            <div className="card" style={{ backgroundColor: '#e0f2fe', borderColor: '#bae6fd' }}>
-                <h3 style={{ margin: 0, color: '#0369a1' }}>Phase 1 Status</h3>
-                <p style={{ margin: '0.5rem 0 0 0', color: '#0c4a6e' }}>
-                    Domain models, fixed activity dataset, and built-in participant records initialized cleanly. Evaluation algorithm and UI controls deferred to later phases.
-                </p>
-            </div>
+                <ParticipantEditor
+                    participants={boardState.participants}
+                    onUpdateParticipants={handleUpdateParticipants}
+                    onEvaluate={handleEvaluate}
+                    onReset={handleReset}
+                />
+
+                <ValidationBanner errors={boardState.validationErrors} />
+
+                <ResultsDisplay
+                    isEvaluated={boardState.isEvaluated}
+                    results={boardState.results}
+                    eligibleCount={boardState.eligibleCount}
+                    ineligibleCount={boardState.ineligibleCount}
+                />
+            </main>
+
+            <footer className="app-footer">
+                <p>College Event Certificate Eligibility Board &bull; In-Memory Evaluation Engine</p>
+            </footer>
         </div>
     );
 };
